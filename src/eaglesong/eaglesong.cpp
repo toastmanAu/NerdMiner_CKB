@@ -138,7 +138,9 @@ static inline uint32_t rotl32(uint32_t v, unsigned n) {
 /* Permutation                                                         */
 /* ------------------------------------------------------------------ */
 
-static void eaglesong_permutation(uint32_t state[16])
+/* IRAM_ATTR: permutation in IRAM eliminates flash cache stalls in mining loop.
+ * Equivalent to NerdMiner_v2 PR #727 (+7.5% hashrate). Fallback defined in header. */
+static IRAM_ATTR void eaglesong_permutation(uint32_t state[16])
 {
     uint32_t n[16];
 
@@ -201,7 +203,7 @@ static void eaglesong_permutation(uint32_t state[16])
  * Squeeze byte ordering: little-endian extract from u32
  *   (state[0] LSB → output[0])
  */
-void eaglesong(const uint8_t *input,  size_t input_len,
+IRAM_ATTR void eaglesong(const uint8_t *input,  size_t input_len,
                uint8_t       *output, size_t output_len)
 {
     uint32_t state[16];

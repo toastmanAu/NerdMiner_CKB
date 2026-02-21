@@ -33,12 +33,18 @@
 extern "C" {
 #endif
 
+/* IRAM_ATTR fallback for non-ESP32 builds (host tests, etc.) */
+#ifndef IRAM_ATTR
+#define IRAM_ATTR
+#endif
+
 /**
  * eaglesong() — hash input_len bytes, write output_len bytes.
  * For CKB mining: input_len=48, output_len=32.
+ * Marked IRAM_ATTR so the hot path runs from IRAM on ESP32.
  */
-void eaglesong(const uint8_t *input,  size_t input_len,
-               uint8_t       *output, size_t output_len);
+IRAM_ATTR void eaglesong(const uint8_t *input,  size_t input_len,
+                         uint8_t       *output, size_t output_len);
 
 /**
  * eaglesong_selftest() — verify against known test vectors.
