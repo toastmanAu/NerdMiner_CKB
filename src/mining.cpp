@@ -230,8 +230,16 @@ void runStratumWorker(void* name)
                 continue;
             }
 
-            strcpy(mWorker.wName, Settings.BtcWallet);
+            /* Build full username: "account.worker" if WorkerName set, else just account */
+            if (strlen(Settings.WorkerName) > 0) {
+                snprintf(mWorker.wName, sizeof(mWorker.wName), "%s.%s",
+                         Settings.BtcWallet, Settings.WorkerName);
+            } else {
+                strncpy(mWorker.wName, Settings.BtcWallet, sizeof(mWorker.wName) - 1);
+                mWorker.wName[sizeof(mWorker.wName) - 1] = '\0';
+            }
             strcpy(mWorker.wPass, Settings.PoolPassword);
+            Serial.printf("[STRATUM] Authorizing as: %s\n", mWorker.wName);
             tx_mining_auth(client, mWorker.wName, mWorker.wPass);
             tx_suggest_difficulty(client, currentPoolDifficulty);
 

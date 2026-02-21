@@ -12,10 +12,11 @@
 #define DEFAULT_SSID		"HanSoloAP"
 #endif
 #define DEFAULT_WIFIPW		"MineYourCoins"
-#define DEFAULT_POOLURL		"public-pool.io"
+#define DEFAULT_POOLURL		"ckb.viabtc.com"
 #define DEFAULT_POOLPASS	"x"
-#define DEFAULT_WALLETID	"yourBtcAddress"
-#define DEFAULT_POOLPORT	21496
+#define DEFAULT_WALLETID	"yourCKBAddress"
+#define DEFAULT_WORKERNAME	"nerd1"
+#define DEFAULT_POOLPORT	3333
 #define DEFAULT_TIMEZONE	2
 #define DEFAULT_SAVESTATS	false
 #define DEFAULT_INVERTCOLORS	false
@@ -30,6 +31,7 @@
 #define JSON_KEY_POOLURL	"PoolUrl"
 #define JSON_KEY_POOLPASS	"PoolPassword"
 #define JSON_KEY_WALLETID	"BtcWallet"
+#define JSON_KEY_WORKERNAME	"WorkerName"
 #define JSON_KEY_POOLPORT	"PoolPort"
 #define JSON_KEY_TIMEZONE	"Timezone"
 #define JSON_KEY_STATS2NV	"SaveStats"
@@ -41,6 +43,7 @@
 #define JSON_SPIFFS_KEY_POOLPORT	"portNumber"
 #define JSON_SPIFFS_KEY_POOLPASS	"poolPassword"
 #define JSON_SPIFFS_KEY_WALLETID	"btcString"
+#define JSON_SPIFFS_KEY_WORKERNAME	"workerName"
 #define JSON_SPIFFS_KEY_TIMEZONE	"gmtZone"
 #define JSON_SPIFFS_KEY_STATS2NV	"saveStatsToNVS"
 #define JSON_SPIFFS_KEY_INVCOLOR	"invertColors"
@@ -53,6 +56,7 @@ struct TSettings
 	String WifiPW{ DEFAULT_WIFIPW };
 	String PoolAddress{ DEFAULT_POOLURL };
 	char BtcWallet[80]{ DEFAULT_WALLETID };
+	char WorkerName[40]{ DEFAULT_WORKERNAME };
 	char PoolPassword[80]{ DEFAULT_POOLPASS };
 	int PoolPort{ DEFAULT_POOLPORT };
 	int Timezone{ DEFAULT_TIMEZONE };

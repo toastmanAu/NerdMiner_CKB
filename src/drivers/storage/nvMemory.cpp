@@ -28,14 +28,15 @@ bool nvMemory::saveConfig(TSettings* Settings)
         Serial.println(F("SPIFS: Saving configuration."));
 
         // Create a JSON document
-        StaticJsonDocument<512> json;
-        json[JSON_SPIFFS_KEY_POOLURL] = Settings->PoolAddress;
-        json[JSON_SPIFFS_KEY_POOLPORT] = Settings->PoolPort;
-        json[JSON_SPIFFS_KEY_POOLPASS] = Settings->PoolPassword;
-        json[JSON_SPIFFS_KEY_WALLETID] = Settings->BtcWallet;
-        json[JSON_SPIFFS_KEY_TIMEZONE] = Settings->Timezone;
-        json[JSON_SPIFFS_KEY_STATS2NV] = Settings->saveStats;
-        json[JSON_SPIFFS_KEY_INVCOLOR] = Settings->invertColors;
+        StaticJsonDocument<640> json;
+        json[JSON_SPIFFS_KEY_POOLURL]    = Settings->PoolAddress;
+        json[JSON_SPIFFS_KEY_POOLPORT]   = Settings->PoolPort;
+        json[JSON_SPIFFS_KEY_POOLPASS]   = Settings->PoolPassword;
+        json[JSON_SPIFFS_KEY_WALLETID]   = Settings->BtcWallet;
+        json[JSON_SPIFFS_KEY_WORKERNAME] = Settings->WorkerName;
+        json[JSON_SPIFFS_KEY_TIMEZONE]   = Settings->Timezone;
+        json[JSON_SPIFFS_KEY_STATS2NV]   = Settings->saveStats;
+        json[JSON_SPIFFS_KEY_INVCOLOR]   = Settings->invertColors;
         json[JSON_SPIFFS_KEY_BRIGHTNESS] = Settings->Brightness;
 
         // Open config file
@@ -83,7 +84,7 @@ bool nvMemory::loadConfig(TSettings* Settings)
             if (configFile)
             {
                 Serial.println("SPIFS: Loading config file");
-                StaticJsonDocument<512> json;
+                StaticJsonDocument<640> json;
                 DeserializationError error = deserializeJson(json, configFile);
                 configFile.close();
                 serializeJsonPretty(json, Serial);
@@ -93,6 +94,8 @@ bool nvMemory::loadConfig(TSettings* Settings)
                     Settings->PoolAddress = json[JSON_SPIFFS_KEY_POOLURL] | Settings->PoolAddress;
                     strcpy(Settings->PoolPassword, json[JSON_SPIFFS_KEY_POOLPASS] | Settings->PoolPassword);
                     strcpy(Settings->BtcWallet, json[JSON_SPIFFS_KEY_WALLETID] | Settings->BtcWallet);
+                    if (json.containsKey(JSON_SPIFFS_KEY_WORKERNAME))
+                        strncpy(Settings->WorkerName, json[JSON_SPIFFS_KEY_WORKERNAME] | Settings->WorkerName, sizeof(Settings->WorkerName) - 1);
                     if (json.containsKey(JSON_SPIFFS_KEY_POOLPORT))
                         Settings->PoolPort = json[JSON_SPIFFS_KEY_POOLPORT].as<int>();
                     if (json.containsKey(JSON_SPIFFS_KEY_TIMEZONE))

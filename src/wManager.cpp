@@ -217,7 +217,10 @@ void init_WifiManager()
     //WiFiManagerParameter password_text_box("Poolpassword", "Pool password (Optional)", Settings.PoolPassword, 80);
 
     // Text box (String) - 80 characters maximum
-    WiFiManagerParameter addr_text_box("btcAddress", "Your BTC address", Settings.BtcWallet, 80);
+    WiFiManagerParameter addr_text_box("btcAddress", "Pool Account / CKB Address", Settings.BtcWallet, 80);
+
+    // Text box (String) - 40 characters maximum
+    WiFiManagerParameter worker_text_box("workerName", "Worker Name (appended as account.worker)", Settings.WorkerName, 40);
 
   // Text box (Number) - 2 characters maximum
   char charZone[6];
@@ -240,6 +243,7 @@ void init_WifiManager()
   wm.addParameter(&port_text_box_num);
   wm.addParameter(&password_text_box);
   wm.addParameter(&addr_text_box);
+  wm.addParameter(&worker_text_box);
   wm.addParameter(&time_text_box_num);
   wm.addParameter(&features_html);
   wm.addParameter(&save_stats_to_nvs);
@@ -278,6 +282,7 @@ void init_WifiManager()
             Settings.PoolPort = atoi(port_text_box_num.getValue());
             strncpy(Settings.PoolPassword, password_text_box.getValue(), sizeof(Settings.PoolPassword));
             strncpy(Settings.BtcWallet, addr_text_box.getValue(), sizeof(Settings.BtcWallet));
+            strncpy(Settings.WorkerName, worker_text_box.getValue(), sizeof(Settings.WorkerName));
             Settings.Timezone = atoi(time_text_box_num.getValue());
             //Serial.println(save_stats_to_nvs.getValue());
             Settings.saveStats = (strncmp(save_stats_to_nvs.getValue(), "T", 1) == 0);
@@ -311,6 +316,7 @@ void init_WifiManager()
                 Settings.PoolPort = atoi(port_text_box_num.getValue());
                 strncpy(Settings.PoolPassword, password_text_box.getValue(), sizeof(Settings.PoolPassword));
                 strncpy(Settings.BtcWallet, addr_text_box.getValue(), sizeof(Settings.BtcWallet));
+                strncpy(Settings.WorkerName, worker_text_box.getValue(), sizeof(Settings.WorkerName));
                 Settings.Timezone = atoi(time_text_box_num.getValue());
                 // Serial.println(save_stats_to_nvs.getValue());
                 Settings.saveStats = (strncmp(save_stats_to_nvs.getValue(), "T", 1) == 0);
@@ -358,6 +364,9 @@ void init_WifiManager()
         strncpy(Settings.BtcWallet, addr_text_box.getValue(), sizeof(Settings.BtcWallet));
         Serial.print("btcString: ");
         Serial.println(Settings.BtcWallet);
+        strncpy(Settings.WorkerName, worker_text_box.getValue(), sizeof(Settings.WorkerName));
+        Serial.print("workerName: ");
+        Serial.println(Settings.WorkerName);
 
         //Convert the number value
         Settings.Timezone = atoi(time_text_box_num.getValue());
@@ -400,6 +409,9 @@ void init_WifiManager()
     strncpy(Settings.BtcWallet, addr_text_box.getValue(), sizeof(Settings.BtcWallet));
     Serial.print("btcString: ");
     Serial.println(Settings.BtcWallet);
+    strncpy(Settings.WorkerName, worker_text_box.getValue(), sizeof(Settings.WorkerName));
+    Serial.print("workerName: ");
+    Serial.println(Settings.WorkerName);
 
     //Convert the number value
     Settings.Timezone = atoi(time_text_box_num.getValue());
