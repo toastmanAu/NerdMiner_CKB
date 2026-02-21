@@ -214,9 +214,6 @@ void init_WifiManager()
     WiFiManagerParameter port_text_box_num("Poolport", "Pool port", convertedValue, 7);
 
     // Text box (String) - 80 characters maximum
-    //WiFiManagerParameter password_text_box("Poolpassword", "Pool password (Optional)", Settings.PoolPassword, 80);
-
-    // Text box (String) - 80 characters maximum
     WiFiManagerParameter addr_text_box("btcAddress", "Pool Account / CKB Address", Settings.BtcWallet, 80);
 
     // Text box (String) - 40 characters maximum
@@ -236,7 +233,7 @@ void init_WifiManager()
   }
   WiFiManagerParameter save_stats_to_nvs("SaveStatsToNVS", "Save mining statistics to flash memory.", "T", 2, checkboxParams, WFM_LABEL_AFTER);
   // Text box (String) - 80 characters maximum
-  WiFiManagerParameter password_text_box("Poolpassword - Optional", "Pool password", Settings.PoolPassword, 80);
+  WiFiManagerParameter password_text_box("poolPassword", "Pool Password", Settings.PoolPassword, 80);
 
   // Add all defined parameters
   wm.addParameter(&pool_text_box);
