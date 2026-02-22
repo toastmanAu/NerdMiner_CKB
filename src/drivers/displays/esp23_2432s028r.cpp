@@ -182,21 +182,22 @@ void printPoolData(){
           render.cdrawString(pData.bestDifficulty.c_str(), 54, 14, TFT_BLACK);
 
           /* Cover the baked "Public-Pool.io" text with our pool name.
-           * Bitmap row 35 (centre of the label) maps to sprite row 15 via the -20 pushImage offset.
-           * 0x0E3E is the bar's cyan background colour sampled from the bitmap at that row. */
+           * Use a solid dark band rather than trying to match the bitmap colour exactly. */
           {
             String poolShort = Settings.PoolAddress;
             int sc = poolShort.indexOf("://");
             if (sc >= 0) poolShort = poolShort.substring(sc + 3);
+            // Strip to first two labels: ckb.viabtc.com → ckb.viabtc
             int d1 = poolShort.indexOf('.');
             int d2 = (d1 >= 0) ? poolShort.indexOf('.', d1 + 1) : -1;
             if (d2 > 0) poolShort = poolShort.substring(0, d2);
             poolShort.toUpperCase();
-            /* Erase the baked label entirely, then draw our own */
-            background.fillRect(0, 11, 320, 18, 0x0E3E);
+            /* Erase the full label band with the bitmap's cyan (~#00BFBF) */
+            uint16_t barColour = background.color565(0, 191, 191);
+            background.fillRect(0, 9, 320, 20, barColour);
             render.setFontSize(14);
             render.setAlignment(Align::TopCenter);
-            render.cdrawString(poolShort.c_str(), 157, 11, TFT_WHITE);
+            render.cdrawString(poolShort.c_str(), 157, 11, TFT_BLACK);
           }
           background.pushSprite(0,190);      
           background.deleteSprite();
@@ -294,15 +295,15 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   render.rdrawString(data.currentTime.c_str(), 286-wdtOffset, 1, TFT_BLACK);
 
   /* Draw Nervos N-mark logo on sprite 1 (origin = screen x=190, y=0).
-   * Logo centred at sprite (95,42) — same position as previous hexagon.
+   * Black out the bitmap's original logo area first, then draw clean N-mark.
    * N-mark geometry traced from official Nervos SVG logo (380×380 source).
-   * Stroke width = 25.8% of size → 14px for a 54×54 target.
-   * Decomposed into: left bar + right bar + 2 diagonal fill triangles.
-   * Drawn each frame so sprite push doesn't erase it. */
+   * Stroke width = 25.8% of size → 14px for a 54×54 target. */
   {
     uint16_t ckbGreen = background.color565(60, 198, 138);  // #3CC68A
-    /* N positioned: top-left corner at sprite (68,15), 54×54, stroke=14 */
-    const int nx = 68, ny = 15, ns = 54, np = 14;
+    /* Black out the entire logo+label region from the bitmap */
+    background.fillRect(40, 8, 85, 105, TFT_BLACK);
+    /* N positioned: top-left corner at sprite (47,12), 54×54, stroke=14 */
+    const int nx = 47, ny = 12, ns = 54, np = 14;
     background.fillRect(nx,        ny, np, ns, ckbGreen);  // left bar
     background.fillRect(nx+ns-np,  ny, np, ns, ckbGreen);  // right bar
     /* Diagonal — two triangles that together form the slash stroke */
@@ -310,8 +311,8 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
     background.fillTriangle(nx,    ny+ns, nx+ns-np, ny+ns, nx+ns, ny, ckbGreen); // lower-left
     /* "CKB MINER" label below the logo */
     background.setTextColor(ckbGreen, TFT_BLACK);
-    background.drawString("CKB",   51, 84, 2);
-    background.drawString("MINER", 51, 97, 2);
+    background.drawString("CKB",   56, 72, 2);
+    background.drawString("MINER", 50, 86, 2);
   }
 
   // Push prepared background to screen
