@@ -256,12 +256,16 @@ void runStratumWorker(void* name)
                 continue;
             }
 
-            /* Build full username: "account.worker" if WorkerName set, else just account */
+            /* Build full username: "account.worker" if WorkerName set, else just account.
+             * Trim leading whitespace from wallet address (can appear in saved settings). */
+            const char* wallet = Settings.BtcWallet;
+            while (*wallet == ' ' || *wallet == '\t') wallet++;  /* skip leading whitespace */
+
             if (strlen(Settings.WorkerName) > 0) {
                 snprintf(mWorker.wName, sizeof(mWorker.wName), "%s.%s",
-                         Settings.BtcWallet, Settings.WorkerName);
+                         wallet, Settings.WorkerName);
             } else {
-                strncpy(mWorker.wName, Settings.BtcWallet, sizeof(mWorker.wName) - 1);
+                strncpy(mWorker.wName, wallet, sizeof(mWorker.wName) - 1);
                 mWorker.wName[sizeof(mWorker.wName) - 1] = '\0';
             }
             strcpy(mWorker.wPass, Settings.PoolPassword);
@@ -354,6 +358,16 @@ void runStratumWorker(void* name)
             case MINING_SET_DIFFICULTY:
                 parse_mining_set_difficulty(line, currentPoolDifficulty);
                 break;
+
+            case MINING_SET_TARGET: {
+                /* ViaBTC CKB: pool sends share target as hex instead of numeric diff */
+                uint8_t share_target[32];
+                if (parse_mining_set_target(line, share_target)) {
+                    currentPoolDifficulty = diff_from_target(share_target);
+                    Serial.printf("[POOL] mining.set_target → diff=%.6f\n", currentPoolDifficulty);
+                }
+                break;
+            }
 
             case STRATUM_SUCCESS: {
                 unsigned long rid = parse_extract_id(line);

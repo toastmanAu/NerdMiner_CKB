@@ -151,6 +151,7 @@ stratum_method parse_mining_method(String line) {
     const char* method = doc["method"];
     if (strcmp(method, "mining.notify")         == 0) return MINING_NOTIFY;
     if (strcmp(method, "mining.set_difficulty") == 0) return MINING_SET_DIFFICULTY;
+    if (strcmp(method, "mining.set_target")     == 0) return MINING_SET_TARGET;
     return STRATUM_UNKNOWN;
 }
 
@@ -168,10 +169,35 @@ bool parse_mining_notify(String line, mining_job& mJob) {
     if (error) return false;
     if (!doc.containsKey("params")) return false;
 
-    mJob.job_id     = String((const char*)doc["params"][0]);
-    const char* pow_hash_hex = (const char*)doc["params"][1];
-    const char* target_hex   = (const char*)doc["params"][2];
-    mJob.clean_jobs = doc["params"][3];
+    mJob.job_id = String((const char*)doc["params"][0]);
+
+    /*
+     * ViaBTC CKB sends 5 params: [job_id, pow_hash, block_height, target, clean]
+     * Some pools send 4 params:  [job_id, pow_hash, target, clean]
+     * Detect by checking whether params[2] is a string (target) or integer (height).
+     */
+    const char* pow_hash_hex = nullptr;
+    const char* target_hex   = nullptr;
+
+    size_t nparams = doc["params"].size();
+    if (nparams >= 5 && doc["params"][2].is<JsonInteger>()) {
+        /* 5-param ViaBTC format */
+        pow_hash_hex    = (const char*)doc["params"][1];
+        uint32_t height = (uint32_t)doc["params"][2];
+        target_hex      = (const char*)doc["params"][3];
+        mJob.clean_jobs = doc["params"][4];
+        Serial.printf("    [5-param] block_height: %u\n", height);
+    } else {
+        /* 4-param standard format */
+        pow_hash_hex    = (const char*)doc["params"][1];
+        target_hex      = (const char*)doc["params"][2];
+        mJob.clean_jobs = doc["params"][3];
+    }
+
+    if (!pow_hash_hex || !target_hex) {
+        Serial.println("    [ERROR] NULL pow_hash or target (wrong param count?)");
+        return false;
+    }
 
     /* Decode hex → binary */
     if (!hex_to_bytes(pow_hash_hex, mJob.pow_hash, 32)) {
@@ -255,6 +281,45 @@ bool parse_mining_set_difficulty(String line, double& difficulty) {
 
     difficulty = (double)doc["params"][0];
     Serial.print("    difficulty: "); Serial.println(difficulty, 12);
+    return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* mining.set_target (ViaBTC CKB)                                     */
+/* params: ["<64-char hex target>"]                                   */
+/* The target is big-endian hex (MSB first). We reverse to LE for    */
+/* internal storage (consistent with mining.notify target format).    */
+/* ------------------------------------------------------------------ */
+
+bool parse_mining_set_target(String line, uint8_t target_le[32]) {
+    Serial.println("    Parsing Method [SET TARGET]");
+    if (!verifyPayload(&line)) return false;
+
+    DeserializationError error = deserializeJson(doc, line);
+    if (error) return false;
+    if (!doc.containsKey("params")) return false;
+
+    const char* target_hex = (const char*)doc["params"][0];
+    if (!target_hex) return false;
+
+    Serial.print("    target_hex: "); Serial.println(target_hex);
+
+    /* Decode big-endian hex → bytes, then reverse to little-endian */
+    uint8_t tmp[32];
+    size_t hex_len = strlen(target_hex);
+    if (hex_len != 64) {
+        Serial.printf("    [ERROR] set_target: expected 64 hex chars, got %u\n", (unsigned)hex_len);
+        return false;
+    }
+    for (int i = 0; i < 32; ++i) {
+        unsigned v;
+        if (sscanf(target_hex + i * 2, "%02x", &v) != 1) return false;
+        tmp[i] = (uint8_t)v;
+    }
+    /* Reverse: BE → LE */
+    for (int i = 0; i < 32; ++i)
+        target_le[i] = tmp[31 - i];
+
     return true;
 }
 

@@ -45,7 +45,8 @@ typedef enum {
     STRATUM_UNKNOWN,
     STRATUM_PARSE_ERROR,
     MINING_NOTIFY,
-    MINING_SET_DIFFICULTY
+    MINING_SET_DIFFICULTY,
+    MINING_SET_TARGET      /* ViaBTC CKB sends share target as hex, not numeric difficulty */
 } stratum_method;
 
 unsigned long getNextId(unsigned long id);
@@ -71,6 +72,7 @@ bool tx_mining_submit(WiFiClient& client, mining_subscribe mWorker, mining_job m
 /* Difficulty helpers */
 bool tx_suggest_difficulty(WiFiClient& client, double difficulty);
 bool parse_mining_set_difficulty(String line, double& difficulty);
+bool parse_mining_set_target(String line, uint8_t target_le[32]);  /* ViaBTC CKB */
 
 unsigned long parse_extract_id(const String& line);
 
