@@ -14,6 +14,9 @@
 /* Job slice size — larger than Bitcoin since Eaglesong ~4× slower than SHA256d on ESP32 */
 #define NONCE_PER_JOB_SW        65536U
 
+/* Current pool share difficulty — set by mining.set_target or mining.set_difficulty */
+extern double currentPoolDifficulty;
+
 #define DEFAULT_DIFFICULTY      0.00015
 #define KEEPALIVE_TIME_ms       30000
 #define POOLINACTIVITY_TIME_ms  60000

@@ -180,6 +180,21 @@ void printPoolData(){
           render.cdrawString(pData.workersHash.c_str(), 265, 14, TFT_BLACK);
           render.setAlignment(Align::BottomLeft);
           render.cdrawString(pData.bestDifficulty.c_str(), 54, 14, TFT_BLACK);
+
+          /* Draw pool short name centered below worker count */
+          {
+            String poolShort = Settings.PoolAddress;
+            int sc = poolShort.indexOf("://");
+            if (sc >= 0) poolShort = poolShort.substring(sc + 3);
+            /* keep only up to 2nd dot, e.g. "ckb.viabtc" from "ckb.viabtc.com" */
+            int d1 = poolShort.indexOf('.');
+            int d2 = (d1 >= 0) ? poolShort.indexOf('.', d1 + 1) : -1;
+            if (d2 > 0) poolShort = poolShort.substring(0, d2);
+            poolShort.toUpperCase();
+            render.setFontSize(12);
+            render.setAlignment(Align::TopCenter);
+            render.cdrawString(poolShort.c_str(), 157, 34, tft.color565(60, 198, 138));  /* CKB green */
+          }
           background.pushSprite(0,190);      
           background.deleteSprite();
       } else {
@@ -209,13 +224,58 @@ void printPoolData(){
 
 
 
+/* ── CKB logo: draws the Nervos hexagon + "CKB" in brand green ──────────── */
+static void drawCKBLogo(int cx, int cy, int r) {
+  /* CKB brand green #3CC68A → RGB565 */
+  uint16_t ckbGreen = tft.color565(60, 198, 138);
+  uint16_t ckbDark  = tft.color565(20, 30, 26);
+
+  /* Filled hexagon (flat-top) using horizontal scan lines */
+  for (int y = -r; y <= r; y++) {
+    float half_w = r * (1.0f - (float)abs(y) / (float)(r + r / 2));
+    if (abs(y) <= r / 2) half_w = r;            /* full width in middle third */
+    else half_w = r * (1.5f - (float)abs(y) / (float)r);
+    int x0 = cx - (int)half_w;
+    int x1 = cx + (int)half_w;
+    if (x1 >= x0) tft.drawFastHLine(x0, cy + y, x1 - x0, ckbGreen);
+  }
+
+  /* Inner dark hexagon (hollow centre) */
+  int ri = r * 55 / 100;
+  for (int y = -ri; y <= ri; y++) {
+    float half_w;
+    if (abs(y) <= ri / 2) half_w = ri;
+    else half_w = ri * (1.5f - (float)abs(y) / (float)ri);
+    int x0 = cx - (int)half_w;
+    int x1 = cx + (int)half_w;
+    if (x1 >= x0) tft.drawFastHLine(x0, cy + y, x1 - x0, ckbDark);
+  }
+
+  /* "CKB" text centred in logo */
+  tft.setTextDatum(MC_DATUM);
+  tft.setTextColor(ckbGreen, ckbDark);
+  tft.setTextSize(1);
+  tft.drawString("CKB", cx, cy, 2);
+}
+
 void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
 {
   mining_data data = getMiningData(mElapsed);
 
   printPoolData();
 
-  if (hasChangedScreen) tft.pushImage(0, 0, initWidth, initHeight, MinerScreen);
+  if (hasChangedScreen) {
+    tft.pushImage(0, 0, initWidth, initHeight, MinerScreen);
+    /* Draw CKB logo over the NerdMiner logo in the top-right corner */
+    drawCKBLogo(285, 42, 32);
+    /* "NERD MINER" label — overwrite with "CKB MINER" in brand green */
+    uint16_t ckbGreen = tft.color565(60, 198, 138);
+    tft.setTextDatum(MC_DATUM);
+    tft.setTextColor(ckbGreen, TFT_BLACK);
+    tft.setTextSize(1);
+    tft.drawString("CKB", 241, 84, 2);
+    tft.drawString("MINER", 241, 97, 2);
+  }
     
   hasChangedScreen = false; 
  

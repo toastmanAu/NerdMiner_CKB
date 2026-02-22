@@ -323,7 +323,12 @@ mining_data getMiningData(unsigned long mElapsed)
   mining_data data;
 
   char best_diff_string[16] = {0};
-  suffix_string(best_diff, best_diff_string, 16, 0);
+  if (best_diff < 0.0001) {
+    /* No share found yet — show pool difficulty so the display isn't just "0" */
+    snprintf(best_diff_string, sizeof(best_diff_string), "P:%.2f", currentPoolDifficulty);
+  } else {
+    suffix_string(best_diff, best_diff_string, 16, 0);
+  }
 
   char timeMining[15] = {0};
   uint64_t tm = upTime;
@@ -437,7 +442,35 @@ String getPoolAPIUrl(void) {
 }
 
 pool_data getPoolData(void){
-    //pool_data pData;    
+
+    /* ── CKB / ViaBTC: pool API not supported → use local data ─────────── */
+    bool isKnownPool = (poolAPIUrl.indexOf("public-pool.io") >= 0 &&
+                        Settings.PoolAddress == "public-pool.io") ||
+                       poolAPIUrl.indexOf("nerdminers.org") >= 0 ||
+                       poolAPIUrl.indexOf("sethforprivacy") >= 0 ||
+                       poolAPIUrl.indexOf("solomining") >= 0;
+
+    if (!isKnownPool) {
+        /* Show local mining data in the bottom bar instead of failed API data */
+        const char* worker = Settings.WorkerName[0] ? Settings.WorkerName : "miner";
+        pData.workersCount = 1;
+
+        /* Right slot: worker name */
+        pData.workersHash = String(worker);
+
+        /* Left slot (under "Best Difficulty" label): show pool share difficulty */
+        if (shares > 0) {
+            pData.bestDifficulty = String(shares) + "SHR";
+        } else {
+            char pool_diff_s[12] = {0};
+            snprintf(pool_diff_s, sizeof(pool_diff_s), "P:%.1f", currentPoolDifficulty);
+            pData.bestDifficulty = String(pool_diff_s);
+        }
+
+        mPoolUpdate = millis();
+        return pData;
+    }
+
     if((mPoolUpdate == 0) || (millis() - mPoolUpdate > UPDATE_POOL_min * 60 * 1000)){      
         if (WiFi.status() != WL_CONNECTED) return pData;            
         //Make first API call to get global hash and current difficulty

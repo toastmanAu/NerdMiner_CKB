@@ -166,7 +166,7 @@ static void MiningJobStop(uint32_t& job_pool,
 /* Pool connection / keepalive                                         */
 /* ------------------------------------------------------------------ */
 
-static double currentPoolDifficulty = DEFAULT_DIFFICULTY;
+double currentPoolDifficulty = DEFAULT_DIFFICULTY;  /* not static — exposed to monitor.cpp */
 
 bool checkPoolConnection(void)
 {
