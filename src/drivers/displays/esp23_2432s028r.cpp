@@ -227,38 +227,19 @@ void printPoolData(){
 
 
 
-/* ── CKB logo: draws the Nervos hexagon + "CKB" in brand green ──────────── */
-static void drawCKBLogo(int cx, int cy, int r) {
-  /* CKB brand green #3CC68A → RGB565 */
+/* ── Nervos N-mark logo: draws the official N letterform in brand green ───── */
+static void drawCKBLogo(int cx, int cy, int size) {
+  /* CKB brand green #3CC68A */
   uint16_t ckbGreen = tft.color565(60, 198, 138);
-  uint16_t ckbDark  = tft.color565(20, 30, 26);
-
-  /* Filled hexagon (flat-top) using horizontal scan lines */
-  for (int y = -r; y <= r; y++) {
-    float half_w = r * (1.0f - (float)abs(y) / (float)(r + r / 2));
-    if (abs(y) <= r / 2) half_w = r;            /* full width in middle third */
-    else half_w = r * (1.5f - (float)abs(y) / (float)r);
-    int x0 = cx - (int)half_w;
-    int x1 = cx + (int)half_w;
-    if (x1 >= x0) tft.drawFastHLine(x0, cy + y, x1 - x0, ckbGreen);
-  }
-
-  /* Inner dark hexagon (hollow centre) */
-  int ri = r * 55 / 100;
-  for (int y = -ri; y <= ri; y++) {
-    float half_w;
-    if (abs(y) <= ri / 2) half_w = ri;
-    else half_w = ri * (1.5f - (float)abs(y) / (float)ri);
-    int x0 = cx - (int)half_w;
-    int x1 = cx + (int)half_w;
-    if (x1 >= x0) tft.drawFastHLine(x0, cy + y, x1 - x0, ckbDark);
-  }
-
-  /* "CKB" text centred in logo */
-  tft.setTextDatum(MC_DATUM);
-  tft.setTextColor(ckbGreen, ckbDark);
-  tft.setTextSize(1);
-  tft.drawString("CKB", cx, cy, 2);
+  /* N-mark: left bar, right bar, two diagonal triangles.
+   * Stroke width = 25.8% of size (traced from official 380×380 Nervos SVG). */
+  int np = size * 258 / 1000;  // stroke width
+  int nx = cx - size / 2;
+  int ny = cy - size / 2;
+  tft.fillRect(nx,         ny, np,   size, ckbGreen);  // left bar
+  tft.fillRect(nx+size-np, ny, np,   size, ckbGreen);  // right bar
+  tft.fillTriangle(nx+np, ny,      nx+size,    ny,      nx+np, ny+size, ckbGreen);
+  tft.fillTriangle(nx,    ny+size, nx+size-np, ny+size, nx+size, ny,    ckbGreen);
 }
 
 void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
@@ -312,32 +293,22 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   render.setFontSize(10);
   render.rdrawString(data.currentTime.c_str(), 286-wdtOffset, 1, TFT_BLACK);
 
-  /* Draw CKB logo on sprite 1 (origin = screen x=190, y=0).
-   * Logo centre at screen (285,42) → sprite (95,42).  r=30 fits within the 125px sprite width.
-   * Drawn here each frame so sprite pushes don't erase it. */
+  /* Draw Nervos N-mark logo on sprite 1 (origin = screen x=190, y=0).
+   * Logo centred at sprite (95,42) — same position as previous hexagon.
+   * N-mark geometry traced from official Nervos SVG logo (380×380 source).
+   * Stroke width = 25.8% of size → 14px for a 54×54 target.
+   * Decomposed into: left bar + right bar + 2 diagonal fill triangles.
+   * Drawn each frame so sprite push doesn't erase it. */
   {
-    const int cx = 95, cy = 42, r = 30;
-    uint16_t ckbGreen = background.color565(60, 198, 138);
-    uint16_t ckbDark  = background.color565(15, 20, 18);
-    /* Outer filled hexagon */
-    for (int y = -r; y <= r; y++) {
-      float hw = (abs(y) <= r / 2) ? (float)r : r * (1.5f - (float)abs(y) / (float)r);
-      int x0 = cx - (int)hw, x1 = cx + (int)hw;
-      if (x1 > x0) background.drawFastHLine(x0, cy + y, x1 - x0 + 1, ckbGreen);
-    }
-    /* Inner dark centre */
-    int ri = r * 55 / 100;
-    for (int y = -ri; y <= ri; y++) {
-      float hw = (abs(y) <= ri / 2) ? (float)ri : ri * (1.5f - (float)abs(y) / (float)ri);
-      int x0 = cx - (int)hw, x1 = cx + (int)hw;
-      if (x1 > x0) background.drawFastHLine(x0, cy + y, x1 - x0 + 1, ckbDark);
-    }
-    /* "CKB" text inside the hexagon */
-    background.setTextDatum(MC_DATUM);
-    background.setTextColor(ckbGreen, ckbDark);
-    background.setTextSize(1);
-    background.drawString("CKB", cx, cy, 2);
-    /* "CKB MINER" label at screen (241,84)/(241,97) → sprite (51,84)/(51,97) */
+    uint16_t ckbGreen = background.color565(60, 198, 138);  // #3CC68A
+    /* N positioned: top-left corner at sprite (68,15), 54×54, stroke=14 */
+    const int nx = 68, ny = 15, ns = 54, np = 14;
+    background.fillRect(nx,        ny, np, ns, ckbGreen);  // left bar
+    background.fillRect(nx+ns-np,  ny, np, ns, ckbGreen);  // right bar
+    /* Diagonal — two triangles that together form the slash stroke */
+    background.fillTriangle(nx+np, ny,    nx+ns, ny,    nx+np, ny+ns, ckbGreen);  // upper-right
+    background.fillTriangle(nx,    ny+ns, nx+ns-np, ny+ns, nx+ns, ny, ckbGreen); // lower-left
+    /* "CKB MINER" label below the logo */
     background.setTextColor(ckbGreen, TFT_BLACK);
     background.drawString("CKB",   51, 84, 2);
     background.drawString("MINER", 51, 97, 2);
