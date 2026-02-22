@@ -12,9 +12,9 @@
 #define DEFAULT_SSID		"HanSoloAP"
 #endif
 #define DEFAULT_WIFIPW		"MineYourCoins"
-#define DEFAULT_POOLURL		"ckb.viabtc.com"
+#define DEFAULT_POOLURL		"192.168.68.82"
 #define DEFAULT_POOLPASS	"x"
-#define DEFAULT_WALLETID	"yourCKBAddress"
+#define DEFAULT_WALLETID	"ckb1qyqwueud5e9j3lp3chv8qq820s7lxyggd9usvlg"
 #define DEFAULT_WORKERNAME	"nerd1"
 #define DEFAULT_POOLPORT	3333
 #define DEFAULT_TIMEZONE	2
