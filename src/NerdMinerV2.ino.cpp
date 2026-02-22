@@ -10,6 +10,9 @@
 #include "mbedtls/md.h"
 #include "wManager.h"
 #include "mining.h"
+#include "drivers/storage/storage.h"
+
+extern TSettings Settings;
 #include "monitor.h"
 #include "drivers/displays/display.h"
 #include "drivers/storage/SDCard.h"
@@ -124,6 +127,15 @@ void setup()
 
   /******** INIT WIFI ************/
   init_WifiManager();
+
+  /******** PRINT LOADED SETTINGS (DEBUG) *****/
+  Serial.println("\n========== NERDMINER CKB SETTINGS ==========");
+  Serial.printf("  Pool Address : %s\n", Settings.PoolAddress.c_str());
+  Serial.printf("  Pool Port    : %d\n", Settings.PoolPort);
+  Serial.printf("  Worker/Wallet: %s\n", Settings.BtcWallet);
+  Serial.printf("  Worker Name  : %s\n", Settings.WorkerName[0] ? Settings.WorkerName : "(none)");
+  Serial.printf("  Pool Password: %s\n", Settings.PoolPassword[0] ? "***" : "(empty)");
+  Serial.println("=============================================\n");
 
   /******** CREATE TASK TO PRINT SCREEN *****/
   //tft.pushImage(0, 0, MinerWidth, MinerHeight, MinerScreen);

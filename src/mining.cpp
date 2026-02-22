@@ -60,6 +60,25 @@ mining_subscribe     mWorker;
 mining_job           mJob;
 monitor_data         mMonitor;
 static bool volatile isMinerSuscribed = false;
+
+/* ------------------------------------------------------------------ */
+/* Strip URI scheme from pool address (e.g. "stratum+tcp://host:port"  */
+/* → "host"). Also strips trailing :port if included in the URL.       */
+/* ------------------------------------------------------------------ */
+static String getCleanHost(const String& addr) {
+    String host = addr;
+    // Remove scheme: stratum+tcp://, stratum://, tcp://, etc.
+    int schemeEnd = host.indexOf("://");
+    if (schemeEnd >= 0) host = host.substring(schemeEnd + 3);
+    // Strip trailing :port (port is stored separately in Settings.PoolPort)
+    int portIdx = host.indexOf(':');
+    if (portIdx >= 0) host = host.substring(0, portIdx);
+    // Strip trailing slashes
+    while (host.length() > 0 && host[host.length()-1] == '/')
+        host = host.substring(0, host.length() - 1);
+    host.trim();
+    return host;
+}
 unsigned long        mLastTXtoPool    = millis();
 
 int saveIntervals[7]  = {5*60, 15*60, 30*60, 1*3600, 3*3600, 6*3600, 12*3600};
@@ -154,19 +173,26 @@ bool checkPoolConnection(void)
     if (client.connected()) return true;
     isMinerSuscribed = false;
 
-    Serial.println("Client not connected, trying to connect...");
+    String cleanHost = getCleanHost(Settings.PoolAddress);
+
+    Serial.println("[POOL] Client not connected, trying to connect...");
+    Serial.printf("[POOL] Address (raw):   %s\n", Settings.PoolAddress.c_str());
+    Serial.printf("[POOL] Address (clean): %s\n", cleanHost.c_str());
+    Serial.printf("[POOL] Port:            %d\n", Settings.PoolPort);
 
     if (serverIP == IPAddress(1,1,1,1)) {
-        WiFi.hostByName(Settings.PoolAddress.c_str(), serverIP);
-        Serial.printf("Resolved DNS (first time): %s\n", serverIP.toString().c_str());
+        WiFi.hostByName(cleanHost.c_str(), serverIP);
+        Serial.printf("[POOL] Resolved DNS (first time): %s\n", serverIP.toString().c_str());
     }
 
     if (!client.connect(serverIP, Settings.PoolPort)) {
-        Serial.println("Cannot connect to: " + Settings.PoolAddress);
-        WiFi.hostByName(Settings.PoolAddress.c_str(), serverIP);
-        Serial.printf("Resolved DNS: %s\n", serverIP.toString().c_str());
+        Serial.printf("[POOL] Cannot connect to: %s:%d — re-resolving DNS\n", cleanHost.c_str(), Settings.PoolPort);
+        serverIP = IPAddress(1,1,1,1);   /* force re-resolve next attempt */
+        WiFi.hostByName(cleanHost.c_str(), serverIP);
+        Serial.printf("[POOL] Resolved DNS: %s\n", serverIP.toString().c_str());
         return false;
     }
+    Serial.printf("[POOL] Connected to: %s:%d\n", cleanHost.c_str(), Settings.PoolPort);
     return true;
 }
 
@@ -476,6 +502,9 @@ void minerWorkerSw(void* task_id)
             memcpy(input,      job->pow_hash,     32);
             memcpy(input + 40, job->nonce_prefix,  8);
 
+            /* DEBUG: print first hash of each job on miner 0 */
+            bool printed_first_hash = false;
+
             for (uint32_t n = 0; n < job->nonce_count; ++n) {
                 uint64_t nv = job->nonce_start + (uint64_t)n;
 
@@ -490,6 +519,23 @@ void minerWorkerSw(void* task_id)
                 input[39] = (uint8_t)(nv >> 56);
 
                 eaglesong(input, 48, hash, 32);
+
+                /* DEBUG: print first hash of each new job (miner_id==0 only) */
+                if (!printed_first_hash && miner_id == 0) {
+                    printed_first_hash = true;
+                    Serial.printf("[MINER] Job %u nonce0=0x%016llx\n", job->id, nv);
+                    Serial.print("[MINER] input[0..31]  (pow_hash): ");
+                    for (int i=0; i<32; i++) Serial.printf("%02x", input[i]);
+                    Serial.println();
+                    Serial.print("[MINER] input[32..47] (nonce LE): ");
+                    for (int i=32; i<48; i++) Serial.printf("%02x", input[i]);
+                    Serial.println();
+                    Serial.print("[MINER] hash:                     ");
+                    for (int i=0; i<32; i++) Serial.printf("%02x", hash[i]);
+                    Serial.println();
+                    Serial.printf("[MINER] hash diff: %.6f  pool diff: %.6f\n",
+                                  diff_from_target(hash), job->difficulty);
+                }
 
                 double diff_hash = diff_from_target(hash);
                 if (diff_hash > result->difficulty) {
