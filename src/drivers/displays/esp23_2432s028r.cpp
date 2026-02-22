@@ -181,19 +181,22 @@ void printPoolData(){
           render.setAlignment(Align::BottomLeft);
           render.cdrawString(pData.bestDifficulty.c_str(), 54, 14, TFT_BLACK);
 
-          /* Draw pool short name centered below worker count */
+          /* Cover the baked "Public-Pool.io" text with our pool name.
+           * Bitmap row 35 (centre of the label) maps to sprite row 15 via the -20 pushImage offset.
+           * 0x0E3E is the bar's cyan background colour sampled from the bitmap at that row. */
           {
             String poolShort = Settings.PoolAddress;
             int sc = poolShort.indexOf("://");
             if (sc >= 0) poolShort = poolShort.substring(sc + 3);
-            /* keep only up to 2nd dot, e.g. "ckb.viabtc" from "ckb.viabtc.com" */
             int d1 = poolShort.indexOf('.');
             int d2 = (d1 >= 0) ? poolShort.indexOf('.', d1 + 1) : -1;
             if (d2 > 0) poolShort = poolShort.substring(0, d2);
             poolShort.toUpperCase();
-            render.setFontSize(12);
+            /* Erase the baked label entirely, then draw our own */
+            background.fillRect(0, 11, 320, 18, 0x0E3E);
+            render.setFontSize(14);
             render.setAlignment(Align::TopCenter);
-            render.cdrawString(poolShort.c_str(), 157, 34, tft.color565(60, 198, 138));  /* CKB green */
+            render.cdrawString(poolShort.c_str(), 157, 11, TFT_WHITE);
           }
           background.pushSprite(0,190);      
           background.deleteSprite();
@@ -266,15 +269,6 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
 
   if (hasChangedScreen) {
     tft.pushImage(0, 0, initWidth, initHeight, MinerScreen);
-    /* Draw CKB logo over the NerdMiner logo in the top-right corner */
-    drawCKBLogo(285, 42, 32);
-    /* "NERD MINER" label — overwrite with "CKB MINER" in brand green */
-    uint16_t ckbGreen = tft.color565(60, 198, 138);
-    tft.setTextDatum(MC_DATUM);
-    tft.setTextColor(ckbGreen, TFT_BLACK);
-    tft.setTextSize(1);
-    tft.drawString("CKB", 241, 84, 2);
-    tft.drawString("MINER", 241, 97, 2);
   }
     
   hasChangedScreen = false; 
@@ -317,6 +311,37 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   // Print Hour
   render.setFontSize(10);
   render.rdrawString(data.currentTime.c_str(), 286-wdtOffset, 1, TFT_BLACK);
+
+  /* Draw CKB logo on sprite 1 (origin = screen x=190, y=0).
+   * Logo centre at screen (285,42) → sprite (95,42).  r=30 fits within the 125px sprite width.
+   * Drawn here each frame so sprite pushes don't erase it. */
+  {
+    const int cx = 95, cy = 42, r = 30;
+    uint16_t ckbGreen = background.color565(60, 198, 138);
+    uint16_t ckbDark  = background.color565(15, 20, 18);
+    /* Outer filled hexagon */
+    for (int y = -r; y <= r; y++) {
+      float hw = (abs(y) <= r / 2) ? (float)r : r * (1.5f - (float)abs(y) / (float)r);
+      int x0 = cx - (int)hw, x1 = cx + (int)hw;
+      if (x1 > x0) background.drawFastHLine(x0, cy + y, x1 - x0 + 1, ckbGreen);
+    }
+    /* Inner dark centre */
+    int ri = r * 55 / 100;
+    for (int y = -ri; y <= ri; y++) {
+      float hw = (abs(y) <= ri / 2) ? (float)ri : ri * (1.5f - (float)abs(y) / (float)ri);
+      int x0 = cx - (int)hw, x1 = cx + (int)hw;
+      if (x1 > x0) background.drawFastHLine(x0, cy + y, x1 - x0 + 1, ckbDark);
+    }
+    /* "CKB" text inside the hexagon */
+    background.setTextDatum(MC_DATUM);
+    background.setTextColor(ckbGreen, ckbDark);
+    background.setTextSize(1);
+    background.drawString("CKB", cx, cy, 2);
+    /* "CKB MINER" label at screen (241,84)/(241,97) → sprite (51,84)/(51,97) */
+    background.setTextColor(ckbGreen, TFT_BLACK);
+    background.drawString("CKB",   51, 84, 2);
+    background.drawString("MINER", 51, 97, 2);
+  }
 
   // Push prepared background to screen
   background.pushSprite(190, 0);
