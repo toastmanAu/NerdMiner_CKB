@@ -124,7 +124,7 @@ bool isSha256Valid(const void* sha256)
 bool checkValid(unsigned char* hash, unsigned char* target) {
   bool valid = true;
   unsigned char diff_target[32];
-  memcpy(diff_target, &target, 32);
+  memcpy(diff_target, target, 32);
   //convert target to little endian for comparison
   reverse_bytes(diff_target, 32);
 
