@@ -245,7 +245,7 @@ mining_data getMiningData(unsigned long mElapsed)
   mining_data data;
 
   char best_diff_string[16] = {0};
-  suffix_string(best_diff, best_diff_string, 16, 0);
+  suffix_string(best_diff, best_diff_string, 16, 2);
 
   char timeMining[15] = {0};
   uint64_t secElapsed = upTime + (esp_timer_get_time() / 1000000);
@@ -400,7 +400,7 @@ pool_data getPoolData(void){
               if (doc.containsKey("bestDifficulty")) {
               temp = doc["bestDifficulty"].as<double>();            
               char best_diff_string[16] = {0};
-              suffix_string(temp, best_diff_string, 16, 0);
+              suffix_string(temp, best_diff_string, 16, 2);
               pData.bestDifficulty = String(best_diff_string);
               }
               doc.clear();

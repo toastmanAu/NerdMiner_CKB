@@ -155,34 +155,48 @@ extern unsigned long mPoolUpdate;
 void printPoolData(){
   if ((hasChangedScreen) || (mPoolUpdate == 0) || (millis() - mPoolUpdate > UPDATE_POOL_min * 60 * 1000)){     
       if (Settings.PoolAddress != "tn.vkbit.com") { 
-          pData = getPoolData();             
-          background.createSprite(320,50); //Background Sprite
-          if (!background.created()) {    
-            Serial.println("###### POOL SPRITE ERROR ######");
-          // Serial.printf("Pool data W:%d H:%s D:%s\n", pData.workersCount, pData.workersHash, pData.bestDifficulty);
-            printheap();        
-          }       
-          background.setSwapBytes(true);
-          if (bottomScreenBlue) {
-            background.pushImage(0, -20, 320, 70, bottonPoolScreen);
-            tft.pushImage(0,170,320,20,bottonPoolScreen);      
+          // Local address: skip HTTP pool API (will fail), use miner's own stats
+          String _addr = Settings.PoolAddress;
+          bool _isLocal = _addr.startsWith("192.168") || _addr.startsWith("10.") ||
+                          _addr.startsWith("172.") || _addr == "localhost";
+          if (!_isLocal) {
+            pData = getPoolData();
           } else {
-            background.pushImage(0, -20, 320, 70, bottonPoolScreen_g);
-            tft.pushImage(0,170,320,20,bottonPoolScreen_g);
+            // Local mode: use miner's own best_diff; workers/hashrate are pool-only
+            extern double best_diff;
+            pData.bestDifficulty = String(best_diff, 2);
+            pData.workersHash = "N/A";
+            pData.workersCount = 0;  // N/A — will display as "N/A" below
           }
-                
-          render.setDrawer(background); // Link drawing object to background instance (so font will be rendered on background)
-          render.setLineSpaceRatio(1);
-          
-          render.setFontSize(24);
-          render.cdrawString(String(pData.workersCount).c_str(), 157, 16, TFT_BLACK);
-          render.setFontSize(18);
-          render.setAlignment(Align::BottomRight);
-          render.cdrawString(pData.workersHash.c_str(), 265, 14, TFT_BLACK);
-          render.setAlignment(Align::BottomLeft);
-          render.cdrawString(pData.bestDifficulty.c_str(), 54, 14, TFT_BLACK);
-          background.pushSprite(0,190);      
-          background.deleteSprite();
+
+          // Push clean bottom strip
+          tft.pushImage(0, 170, 320, 67, bottonPoolScreen);
+          tft.fillRect(0, 237, 320, 3, 0x45DD);
+
+          // Pool label — sprite with green key for transparency
+          {
+            const char* poolLabel = _isLocal ? "Local" : "Pool";
+            TFT_eSprite labelSpr = TFT_eSprite(&tft);
+            labelSpr.setColorDepth(16);
+            labelSpr.createSprite(80, 18);
+            labelSpr.fillSprite(TFT_GREEN);
+            labelSpr.setTextColor(TFT_WHITE);
+            labelSpr.setTextDatum(MC_DATUM);
+            labelSpr.drawString(poolLabel, 40, 9, 2);
+            labelSpr.pushSprite(120, 170, TFT_GREEN);
+            labelSpr.deleteSprite();
+          }
+
+          // Pool stats values
+          uint16_t statsBg = tft.color565(68, 181, 212);
+          tft.setTextColor(TFT_BLACK, statsBg);
+          tft.setTextDatum(ML_DATUM);
+          tft.drawString(pData.bestDifficulty.c_str(), 8, 215, 2);
+          tft.setTextDatum(MC_DATUM);
+          tft.drawString(_isLocal ? "N/A" : String(pData.workersCount).c_str(), 160, 215, 2);
+          tft.setTextDatum(MR_DATUM);
+          tft.drawString(pData.workersHash.c_str(), 312, 215, 2);
+          mPoolUpdate = millis();
       } else {
         pData.bestDifficulty = "TESTNET";
         pData.workersHash = "TESTNET";
@@ -235,14 +249,14 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   // Block templates
   render.setFontSize(18);
   render.setAlignment(Align::TopLeft);
-  render.drawString(data.templates.c_str(), 189-wdtOffset, 20, 0xDEDB);
+  render.drawString(data.templates.c_str(), 208-wdtOffset, 20, 0xDEDB);
   // Best diff
-  render.drawString(data.bestDiff.c_str(), 189-wdtOffset, 48, 0xDEDB);
+  render.drawString(data.bestDiff.c_str(), 208-wdtOffset, 48, 0xDEDB);
   // 32Bit shares
   render.setFontSize(18);
   render.drawString(data.completedShares.c_str(), 189-wdtOffset, 76, 0xDEDB);
   // Uptime - use TFT native font (DigitalNumbers cant render d/h/m/: chars)
-  background.setFreeFont(FF1);
+  background.setFreeFont(FSSB9);
   background.setTextSize(1);
   background.setTextDatum(TR_DATUM);
   background.setTextColor(0xDEDB, TFT_BLACK);
@@ -253,16 +267,13 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   render.setAlignment(Align::TopCenter);
   render.drawString(data.valids.c_str(), 290-wdtOffset, 56, 0xDEDB);
 
-  // Print Temp
-  render.setFontSize(10);
-  render.rdrawString(data.temp.c_str(), 239-wdtOffset, 1, TFT_BLACK);
-
-  render.setFontSize(4);
-  render.rdrawString(String(0).c_str(), 244-wdtOffset, 3, TFT_BLACK);
-
-  // Print Hour
-  render.setFontSize(10);
-  render.rdrawString(data.currentTime.c_str(), 286-wdtOffset, 1, TFT_BLACK);
+  // Print Temp + Hour — use native TFT font (DigitalNumbers cant render letters/colons)
+  background.setFreeFont(FSSB9);
+  background.setTextSize(1);
+  background.setTextColor(TFT_BLACK, TFT_BLACK);
+  background.setTextDatum(TR_DATUM);
+  background.drawString(data.temp.c_str(), 239-wdtOffset, 2, GFXFF);
+  background.drawString(data.currentTime.c_str(), 286-wdtOffset, 2, GFXFF);
 
   // Push prepared background to screen
   background.pushSprite(190, 0);
