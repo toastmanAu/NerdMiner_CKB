@@ -28,7 +28,6 @@
 #include <mutex>
 #include <list>
 #include <map>
-#include "i2c_master.h"
 
 /* ------------------------------------------------------------------ */
 /* Defines                                                             */

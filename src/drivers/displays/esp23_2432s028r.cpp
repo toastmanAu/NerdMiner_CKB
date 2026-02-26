@@ -6,6 +6,7 @@
 #include <TFT_eTouch.h>
 #include "media/images_320_170.h"
 #include "media/images_bottom_320_70.h"
+#include "media/ckb_logo_130x95.h"
 #include "media/myFonts.h"
 #include "media/Free_Fonts.h"
 #include "version.h"
@@ -215,8 +216,10 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
 
   printPoolData();
 
-  if (hasChangedScreen) tft.pushImage(0, 0, initWidth, initHeight, MinerScreen);
-    
+  if (hasChangedScreen) {
+    tft.pushImage(0, 0, initWidth, initHeight, MinerScreen);
+    tft.pushImage(0, 0, ckbLogoWidth, ckbLogoHeight, ckbLogoScreen); // CKB logo overlay
+  }
   hasChangedScreen = false; 
  
   int wdtOffset = 190;
@@ -238,9 +241,12 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   // 32Bit shares
   render.setFontSize(18);
   render.drawString(data.completedShares.c_str(), 189-wdtOffset, 76, 0xDEDB);
-  // Hores
-  render.setFontSize(14);
-  render.rdrawString(data.timeMining.c_str(), 315-wdtOffset, 104, 0xDEDB);
+  // Uptime - use TFT native font (DigitalNumbers cant render d/h/m/: chars)
+  background.setFreeFont(FF1);
+  background.setTextSize(1);
+  background.setTextDatum(TR_DATUM);
+  background.setTextColor(0xDEDB, TFT_BLACK);
+  background.drawString(data.timeMining.c_str(), 315-wdtOffset-2, 104, GFXFF);
 
   // Valid Blocks
   render.setFontSize(24);
@@ -510,6 +516,7 @@ void esp32_2432S028R_LoadingScreen(void)
 {
   tft.fillScreen(TFT_BLACK);
   tft.pushImage(0, 33, initWidth, initHeight, initScreen);
+  tft.pushImage(0, 33, ckbLogoWidth, ckbLogoHeight, ckbLogoScreen); // CKB logo overlay
   tft.setTextColor(TFT_BLACK);
   tft.drawString(CURRENT_VERSION, 24, 147, FONT2);
   // delay(2000);
