@@ -1,18 +1,19 @@
 // ckb_config.h — NerdMiner CKB edition
 // Implements the CKBCFG serial protocol, writing to SPIFFS /config.json
-// compatible with NerdMiner's existing WiFiManager config system.
-// Supported JSON keys: SSID, WifiPW, PoolUrl, PoolPassword, BtcWallet, PoolPort
+// for pool/wallet config, and to WiFi NVS for credentials.
+// Touch UI config still works normally — this only triggers via serial.
 //
 // Protocol:
 //   Browser sends: CKBCFG\n
 //   Device replies: READY:nerdminer-cyd\n
-//   Browser sends: { "ssid":"x","pass":"x","url":"x","port":3333,"wallet":"x" }\nEND\n
+//   Browser sends: { "wifi_ssid":"x","wifi_pass":"x","url":"x","port":3333,"wallet":"x" }\nEND\n
 //   Device replies: OK\n  then reboots
 
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include "SPIFFS.h"
+#include <Preferences.h>
+#include <SPIFFS.h>
 #include "drivers/storage/storage.h"
 
 #define CKB_BOARD_ID "nerdminer-cyd"
@@ -70,7 +71,18 @@ static void ckb_config_check() {
     return;
   }
 
-  // Read existing config from SPIFFS
+  // --- WiFi credentials ---
+  // Write into WiFiManager's NVS namespace so it connects automatically.
+  // WiFiManager reads from nvs namespace "wifiman" keys "ssid" and "pass".
+  if (doc.containsKey("wifi_ssid") || doc.containsKey("wifi_pass")) {
+    Preferences prefs;
+    prefs.begin("wifiman", false);
+    if (doc.containsKey("wifi_ssid")) prefs.putString("ssid", doc["wifi_ssid"].as<String>());
+    if (doc.containsKey("wifi_pass")) prefs.putString("pass", doc["wifi_pass"].as<String>());
+    prefs.end();
+  }
+
+  // --- Pool / wallet config via SPIFFS /config.json ---
   DynamicJsonDocument cfg(512);
   if (SPIFFS.exists(JSON_CONFIG_FILE)) {
     File f = SPIFFS.open(JSON_CONFIG_FILE, "r");
@@ -78,16 +90,14 @@ static void ckb_config_check() {
     f.close();
   }
 
-  // Apply fields from browser
   // Theme Builder sends: wifi_ssid, wifi_pass, url, port, wallet, pass2
-  if (doc.containsKey("wifi_ssid")) cfg[JSON_KEY_SSID]            = doc["wifi_ssid"].as<String>();
-  if (doc.containsKey("wifi_pass")) cfg[JSON_KEY_PASW]             = doc["wifi_pass"].as<String>();
-  if (doc.containsKey("url"))       cfg[JSON_SPIFFS_KEY_POOLURL]   = doc["url"].as<String>();
-  if (doc.containsKey("port"))      cfg[JSON_SPIFFS_KEY_POOLPORT]  = doc["port"].as<int>();
-  if (doc.containsKey("wallet"))    cfg[JSON_SPIFFS_KEY_WALLETID]  = doc["wallet"].as<String>();
-  if (doc.containsKey("pass2"))     cfg[JSON_SPIFFS_KEY_POOLPASS]  = doc["pass2"].as<String>();
+  if (doc.containsKey("wifi_ssid")) cfg[JSON_KEY_SSID]           = doc["wifi_ssid"].as<String>();
+  if (doc.containsKey("wifi_pass")) cfg[JSON_KEY_PASW]            = doc["wifi_pass"].as<String>();
+  if (doc.containsKey("url"))       cfg[JSON_SPIFFS_KEY_POOLURL]  = doc["url"].as<String>();
+  if (doc.containsKey("port"))      cfg[JSON_SPIFFS_KEY_POOLPORT] = doc["port"].as<int>();
+  if (doc.containsKey("wallet"))    cfg[JSON_SPIFFS_KEY_WALLETID] = doc["wallet"].as<String>();
+  if (doc.containsKey("pass2"))     cfg[JSON_SPIFFS_KEY_POOLPASS] = doc["pass2"].as<String>();
 
-  // Write back to SPIFFS
   File f = SPIFFS.open(JSON_CONFIG_FILE, "w");
   serializeJson(cfg, f);
   f.close();
