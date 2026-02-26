@@ -170,8 +170,7 @@ void printPoolData(){
           }
 
           // Push clean bottom strip
-          tft.pushImage(0, 170, 320, 67, bottonPoolScreen);
-          tft.fillRect(0, 237, 320, 3, 0x45DD);
+          tft.pushImage(0, 170, 320, 70, bottonPoolScreen);
 
           // Pool label — sprite with green key for transparency
           {
@@ -187,15 +186,37 @@ void printPoolData(){
             labelSpr.deleteSprite();
           }
 
-          // Pool stats values
-          uint16_t statsBg = tft.color565(68, 181, 212);
-          tft.setTextColor(TFT_BLACK, statsBg);
-          tft.setTextDatum(ML_DATUM);
-          tft.drawString(pData.bestDifficulty.c_str(), 8, 215, 2);
-          tft.setTextDatum(MC_DATUM);
-          tft.drawString(_isLocal ? "N/A" : String(pData.workersCount).c_str(), 160, 215, 2);
-          tft.setTextDatum(MR_DATUM);
-          tft.drawString(pData.workersHash.c_str(), 312, 215, 2);
+          // Pool stats values — 7-segment DigitalNumbers font
+          // Redraw strip region first to clear old values cleanly
+          tft.pushImage(0, 170, 320, 70, bottonPoolScreen);
+          render.setDrawer(tft);
+          render.setLineSpaceRatio(1);
+          render.setFontSize(18);
+          render.setAlignment(Align::MiddleLeft);
+          render.drawString(pData.bestDifficulty.c_str(), 8, 215, TFT_WHITE);
+          render.setDrawer(background);
+          // Workers
+          if (_isLocal) {
+            tft.setTextColor(TFT_WHITE);
+            tft.setTextDatum(MC_DATUM);
+            tft.drawString("N/A", 160, 215, 2);
+          } else {
+            render.setDrawer(tft);
+            render.setAlignment(Align::MiddleCenter);
+            render.drawString(String(pData.workersCount).c_str(), 160, 215, TFT_WHITE);
+            render.setDrawer(background);
+          }
+          // Total Hash Rate
+          if (_isLocal) {
+            tft.setTextColor(TFT_WHITE);
+            tft.setTextDatum(MR_DATUM);
+            tft.drawString("N/A", 312, 215, 2);
+          } else {
+            render.setDrawer(tft);
+            render.setAlignment(Align::MiddleRight);
+            render.drawString(pData.workersHash.c_str(), 312, 215, TFT_WHITE);
+            render.setDrawer(background);
+          }
           mPoolUpdate = millis();
       } else {
         pData.bestDifficulty = "TESTNET";
@@ -249,9 +270,9 @@ void esp32_2432S028R_MinerScreen(unsigned long mElapsed)
   // Block templates
   render.setFontSize(18);
   render.setAlignment(Align::TopLeft);
-  render.drawString(data.templates.c_str(), 208-wdtOffset, 20, 0xDEDB);
+  render.drawString(data.templates.c_str(), 202-wdtOffset, 20, 0xDEDB);
   // Best diff
-  render.drawString(data.bestDiff.c_str(), 208-wdtOffset, 48, 0xDEDB);
+  render.drawString(data.bestDiff.c_str(), 202-wdtOffset, 48, 0xDEDB);
   // 32Bit shares
   render.setFontSize(18);
   render.drawString(data.completedShares.c_str(), 189-wdtOffset, 76, 0xDEDB);

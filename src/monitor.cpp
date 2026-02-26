@@ -237,7 +237,12 @@ String getTime(void){
 
 String getCurrentHashRate(unsigned long mElapsed)
 {
-  return String((1.0 * (elapsedKHs * 1000)) / mElapsed, 2);
+  static String lastRate = "0.00";
+  double rate = (1.0 * (elapsedKHs * 1000)) / mElapsed;
+  if (rate > 0.0) {
+    lastRate = String(rate, 2);
+  }
+  return lastRate;
 }
 
 mining_data getMiningData(unsigned long mElapsed)
