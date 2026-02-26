@@ -647,3 +647,8 @@ void runMonitor(void* name)
         frame++;
     }
 }
+
+/* runMiner — alias for minerWorkerSw, used by task creation */
+void runMiner(void* task_id) {
+    minerWorkerSw(task_id);
+}
