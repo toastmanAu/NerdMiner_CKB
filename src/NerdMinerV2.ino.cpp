@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <SPIFFS.h>
 #include <WebServer.h>
 #include <esp_task_wdt.h>
 #include <OneButton.h>
@@ -13,6 +14,7 @@
 #include "monitor.h"
 #include "drivers/displays/display.h"
 #include "drivers/storage/SDCard.h"
+#include "ckb_config.h"
 #include "timeconst.h"
 
 #ifdef TOUCH_ENABLE
@@ -68,6 +70,11 @@ void setup()
 
   Serial.setTimeout(0);
   delay(SECOND_MS/10);
+
+  // CKB Flasher config: listen 5s for Theme Builder serial session
+  if (!SPIFFS.begin(true)) Serial.println("SPIFFS init failed");
+  ckb_config_check();
+  // SPIFFS stays mounted for nvMemory
 
   esp_task_wdt_init(WDT_MINER_TIMEOUT, true);
   // Idle task that would reset WDT never runs, because core 0 gets fully utilized
