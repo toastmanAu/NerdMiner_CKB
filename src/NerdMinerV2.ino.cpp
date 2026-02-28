@@ -18,6 +18,7 @@ extern TSettings Settings;
 #include "drivers/storage/SDCard.h"
 #include "ShaTests/nerdSHA_HWTest.h"
 #include "timeconst.h"
+#include "screenshot.h"
 
 #ifdef TOUCH_ENABLE
 #include "TouchHandler.h"
@@ -128,6 +129,11 @@ void setup()
   /******** INIT WIFI ************/
   init_WifiManager();
 
+  /******** SCREENSHOT SERVER (dev-screenshot branch only) *****/
+  #ifdef SCREENSHOT_SERVER
+  initScreenshotServer();
+  #endif
+
   /******** PRINT LOADED SETTINGS (DEBUG) *****/
   Serial.println("\n========== NERDMINER CKB SETTINGS ==========");
   Serial.printf("  Pool Address : %s\n", Settings.PoolAddress.c_str());
@@ -226,6 +232,10 @@ void loop() {
   touchHandler.isTouched();
 #endif
   wifiManagerProcess(); // avoid delays() in loop when non-blocking and other long running code
+
+  #ifdef SCREENSHOT_SERVER
+  handleScreenshotServer();
+  #endif
 
   vTaskDelay(50 / portTICK_PERIOD_MS);
 }
