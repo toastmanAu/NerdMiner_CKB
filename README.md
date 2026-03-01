@@ -98,15 +98,16 @@ Set your CKB pool in the NerdMiner WiFi config portal:
 
 ---
 
-## Status / Remaining Work
+## Status
 
 - [x] Eaglesong C implementation (verified against reference vectors)
 - [x] CKB Stratum protocol (mining.notify / mining.submit)
 - [x] 128-bit nonce with extranonce1 support
 - [x] minerWorkerSw adapted for Eaglesong
 - [x] Hardware SHA256 acceleration removed
-- [ ] Display labels still say "BTC" (cosmetic — change in monitor.cpp)
-- [ ] Test against a live CKB Stratum pool endpoint
+- [x] Worker name field added to WiFi config portal
+- [x] Tested against live CKB Stratum pool (ViaBTC)
+- [ ] Display labels still reference BTC (cosmetic — monitor.cpp)
 - [ ] Performance benchmarking on ESP32-S3
 
 ---
