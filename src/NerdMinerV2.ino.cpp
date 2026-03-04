@@ -19,6 +19,7 @@ extern TSettings Settings;
 #include "ShaTests/nerdSHA_HWTest.h"
 #include "timeconst.h"
 #include "screenshot.h"
+#include "telegramOTA.h"
 
 #ifdef TOUCH_ENABLE
 #include "TouchHandler.h"
@@ -128,6 +129,11 @@ void setup()
 
   /******** INIT WIFI ************/
   init_WifiManager();
+
+  /******** TELEGRAM OTA (opt-in via -D TELEGRAM_OTA build flag) *****/
+  #ifdef TELEGRAM_OTA
+  initTelegramOTA();
+  #endif
 
   /******** SCREENSHOT SERVER (dev-screenshot branch only) *****/
   #ifdef SCREENSHOT_SERVER
